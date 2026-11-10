@@ -1,0 +1,952 @@
+// Complete Necon schema (specs 101–110).
+// Convention: default Prisma names (PascalCase tables, camelCase columns),
+// same as the models in the specs. Everything in UTC.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  THERAPIST
+  ADMIN
+  /// Legal guardian of one or more patients (spec 112): read-only and practice at home.
+  PARENT
+  /// Platform-level, without an institution (spec 113): reviews requests and creates institutions. Never sees a center's data.
+  SUPER_ADMIN
+}
+
+/// Therapy session on a Center tablet or practice at home by a guardian (spec 112).
+enum SessionKind {
+  THERAPY
+  HOME
+}
+
+enum PatientStatus {
+  ACTIVE
+  DISCHARGED
+}
+
+enum GoalStatus {
+  IN_PROGRESS
+  ACHIEVED
+  SUSPENDED
+}
+
+enum ActorType {
+  USER
+  DEVICE
+  SYSTEM
+}
+
+enum DataRequestType {
+  ACCESS
+  RECTIFICATION
+  DELETION
+}
+
+enum DataRequestStatus {
+  OPEN
+  DONE
+  REJECTED
+}
+
+enum JobType {
+  REPORT_PDF
+  EXPORT_ZIP
+  VOICE_REGISTER
+  VOICE_CLIPS
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+  CANCELED
+}
+
+// ==================== 101 · AUTH ====================
+
+model User {
+  id                 String    @id @default(uuid())
+  /// Null only for the super administrator (spec 113).
+  institutionId      String?   @default(dbgenerated("current_institution()"))
+  name               String
+  /// Unique per institution: the same person can have an account in two (spec 113 FR-008).
+  email              String
+  passwordHash       String
+  /// Temporary password assigned by the admin: the API blocks everything until it is changed.
+  mustChangePassword Boolean   @default(false)
+  /// The therapist's tablet PIN (spec 002): only the argon2id hash; verified by the API.
+  pinHash            String?
+  pinFailures        Int       @default(0)
+  pinLockedUntil     DateTime?
+  role               Role
+  /// Specialist's area (speech therapy, psychology...). Free text chosen by the center admin; filters the agenda.
+  specialty          String?   @db.VarChar(80)
+  active             Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  refreshTokens     RefreshToken[]
+  passwordResets    PasswordReset[]
+  assignedPatients  TherapistPatient[]
+  createdPatients   Patient[]                @relation("PatientCreatedBy")
+  registrationCodes DeviceRegistrationCode[]
+  notes             Note[]
+  goals             Goal[]
+  sessions          Session[]                @relation("SessionTherapist")
+  children          GuardianPatient[]
+  homeworks         Homework[]               @relation("HomeworkAuthor")
+  homeSessions      Session[]                @relation("SessionGuardian")
+  appointments      Appointment[]            @relation("AppointmentTherapist")
+  institution       Institution?             @relation(fields: [institutionId], references: [id])
+
+  @@unique([institutionId, email])
+  @@index([email])
+  @@index([institutionId, specialty])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Lockout by email: 5 failures in 15 min → locked for 15 min (spec 101).
+/// Stored by email, whether or not the user exists, so as not to reveal which ones exist.
+model LoginAttempt {
+  email          String
+  ip             String    @default("")
+  failures       Int       @default(0)
+  windowStartsAt DateTime
+  lockedUntil    DateTime?
+
+  @@id([email, ip])
+}
+
+// ==================== 102 · USERS ====================
+
+model TherapistPatient {
+  institutionId String   @default(dbgenerated("current_institution()"))
+  therapistId   String
+  patientId     String
+  assignedAt    DateTime @default(now())
+  therapist     User     @relation(fields: [therapistId], references: [id])
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@id([therapistId, patientId])
+  @@index([patientId])
+}
+
+/// Guardian ↔ patient, many to many (spec 112 FR-002).
+model GuardianPatient {
+  institutionId String   @default(dbgenerated("current_institution()"))
+  guardianId    String
+  patientId     String
+  assignedAt    DateTime @default(now())
+  guardian      User     @relation(fields: [guardianId], references: [id])
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@id([guardianId, patientId])
+  @@index([patientId])
+}
+
+// ==================== 103 · TABLETS ====================
+
+model Device {
+  id                 String                  @id @default(uuid())
+  institutionId      String                  @default(dbgenerated("current_institution()"))
+  name               String
+  model              String?
+  appVersion         String?
+  tokenHash          String                  @unique
+  /// ECDSA P-256 public key (SPKI in base64) from the tablet's Keystore: verifies the signature of each request.
+  publicKey          String
+  /// Code it was registered with (and through it, which administrator authorized it).
+  registrationCodeId String?                 @unique
+  registrationCode   DeviceRegistrationCode? @relation(fields: [registrationCodeId], references: [id])
+  registeredAt       DateTime                @default(now())
+  lastSeenAt         DateTime?
+  lastSyncAt         DateTime?
+  revokedAt          DateTime?
+  sessions           Session[]
+  institution        Institution             @relation(fields: [institutionId], references: [id])
+
+  @@index([institutionId])
+}
+
+model DeviceRegistrationCode {
+  id            String    @id @default(uuid())
+  institutionId String    @default(dbgenerated("current_institution()"))
+  codeHash      String    @unique
+  createdBy     String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+  creator       User      @relation(fields: [createdBy], references: [id])
+  device        Device?
+}
+
+// ==================== 104 · PATIENTS ====================
+
+model Patient {
+  id              String        @id @default(uuid())
+  institutionId   String        @default(dbgenerated("current_institution()"))
+  /// P-0001, sequential per institution (CenterSettings.lastPatientNumber, spec 113).
+  code            String
+  avatarId        String
+  firstNames      String
+  lastNames       String
+  birthDate       DateTime      @db.Date
+  diagnosisId     String?
+  guardianName    String
+  guardianPhone   String
+  consentDate     DateTime      @db.Date
+  consentFilePath String
+  status          PatientStatus @default(ACTIVE)
+  /// Therapeutic discharge (reversible): sessions that started earlier are still accepted (agreed 2026-10-21).
+  dischargedAt    DateTime?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  creator       User               @relation("PatientCreatedBy", fields: [createdBy], references: [id])
+  avatar        Avatar             @relation(fields: [avatarId], references: [id])
+  diagnosis     Diagnosis?         @relation(fields: [diagnosisId], references: [id])
+  conditions    PatientCondition[]
+  therapists    TherapistPatient[]
+  guardians     GuardianPatient[]
+  homeworks     Homework[]
+  profile       Profile?
+  voice         Voice?
+  sessions      Session[]
+  notes         Note[]
+  goals         Goal[]
+  appointments  Appointment[]
+  treatmentPlan TreatmentPlan?
+
+  @@unique([institutionId, code])
+  @@index([status])
+  @@index([institutionId, status, code])
+}
+
+/// Patient avatars (spec 104 FR-002): the only thing, along with the code, that the tablet shows of the patient.
+/// The image (SVG or PNG) lives in the bucket; here only the path.
+model Avatar {
+  id            String    @id @default(uuid())
+  institutionId String    @default(dbgenerated("current_institution()"))
+  name          String
+  imagePath     String
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  patients      Patient[]
+
+  @@unique([institutionId, name])
+}
+
+/// Diagnosis catalog (spec 104 FR-002): extended by the admin and the therapists; if in use it is deactivated, if unused it is deleted.
+model Diagnosis {
+  id            String    @id @default(uuid())
+  institutionId String    @default(dbgenerated("current_institution()"))
+  name          String
+  active        Boolean   @default(true)
+  patients      Patient[]
+
+  @@unique([institutionId, name])
+}
+
+/// Associated conditions (e.g. Down syndrome), several per patient.
+model Condition {
+  id            String             @id @default(uuid())
+  institutionId String             @default(dbgenerated("current_institution()"))
+  name          String
+  active        Boolean            @default(true)
+  patients      PatientCondition[]
+
+  @@unique([institutionId, name])
+}
+
+model PatientCondition {
+  institutionId String    @default(dbgenerated("current_institution()"))
+  patientId     String
+  conditionId   String
+  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  condition     Condition @relation(fields: [conditionId], references: [id])
+
+  @@id([patientId, conditionId])
+  @@index([conditionId])
+}
+
+// ==================== 105 · COMMUNICATION PROFILE ====================
+
+model Profile {
+  id                    String             @id @default(uuid())
+  institutionId         String             @default(dbgenerated("current_institution()"))
+  patientId             String             @unique
+  gridSize              Int                @default(6)
+  activityLevel         Int                @default(1)
+  speechRate            Float              @default(0.9)
+  sentenceBarEnabled    Boolean            @default(true)
+  /// Activities (spec 105 FR-010): prompts per activity, seconds to repeat the word and offered types.
+  activityPrompts       Int                @default(10)
+  activityRepeatSeconds Int                @default(15)
+  activityTypes         String[]           @default(["identify"])
+  /// Board voice (spec 010): SYSTEM (system voice) or CLONED (the patient's cloned voice, if ready).
+  voice                 String             @default("SYSTEM")
+  version               Int                @default(1)
+  /// GlobalSyncVersion value at the last change: enables GET /sync/profiles?since=.
+  syncVersion           Int                @default(0)
+  updatedAt             DateTime           @updatedAt
+  patient               Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  categories            ProfileCategory[]
+  pictograms            ProfilePictogram[]
+
+  @@index([syncVersion])
+  @@index([institutionId, syncVersion, id])
+}
+
+/// Board category of ONE patient (copy of the `Category` catalog, editable per patient).
+model ProfileCategory {
+  id            String             @id @default(uuid())
+  institutionId String             @default(dbgenerated("current_institution()"))
+  profileId     String
+  name          String
+  color         String
+  sortOrder     Int
+  profile       Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  pictograms    ProfilePictogram[]
+
+  @@index([profileId])
+}
+
+/// Pictogram on a patient's board: points to the catalog one (image in the bucket, own or from ARASAAC).
+model ProfilePictogram {
+  id            String          @id @default(uuid())
+  institutionId String          @default(dbgenerated("current_institution()"))
+  profileId     String
+  categoryId    String
+  pictogramId   String
+  sortOrder     Int
+  hidden        Boolean         @default(false)
+  recordingPath String?
+  /// Patient usage (spec 105 FR-008): recalculated from the `pictogram_tapped` events; orders "Más usados".
+  useCount      Int             @default(0)
+  daysUsed      Int             @default(0)
+  lastUsedAt    DateTime?
+  profile       Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  category      ProfileCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  pictogram     Pictogram       @relation(fields: [pictogramId], references: [id])
+
+  @@index([profileId])
+  @@index([categoryId])
+}
+
+/// Basic vocabulary catalog (spec 105 FR-005): template copied into each patient's profile.
+/// Edited by the therapists; never deleted, it is deactivated.
+model Category {
+  id            String              @id @default(uuid())
+  institutionId String              @default(dbgenerated("current_institution()"))
+  name          String
+  color         String // #RRGGBB
+  sortOrder     Int                 @default(0)
+  active        Boolean             @default(true)
+  pictograms    CategoryPictogram[]
+
+  @@unique([institutionId, name])
+}
+
+/// Pictogram saved on the server: ARASAAC copy or own image (spec 105 FR-001, FR-006).
+/// The database holds only the path inside the bucket; the API signs the URL on read.
+/// Word type of a pictogram (agreed 2026-10-25): with it the board opens the category that usually follows in the
+/// sentence (after a person, actions; after an action, things). It comes from ARASAAC (type of its first
+/// keyword: 1 proper noun or pronoun, 2 common noun, 3 verb, 4 descriptive, 5 social, 6 miscellaneous) and the therapist
+/// corrects it in the panel.
+enum WordType {
+  PERSON
+  THING
+  ACTION
+  DESCRIPTOR
+  SOCIAL
+  OTHER
+}
+
+model Pictogram {
+  id            String              @id @default(uuid())
+  institutionId String              @default(dbgenerated("current_institution()"))
+  arasaacId     Int?
+  label         String
+  imagePath     String
+  /// No type (unclassified own image): the board does not switch category when it is tapped.
+  wordType      WordType?
+  active        Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  categories    CategoryPictogram[]
+  profiles      ProfilePictogram[]
+  voiceClips    VoiceClip[]
+  homeworks     HomeworkPictogram[]
+
+  @@unique([institutionId, arasaacId])
+  @@index([label])
+  @@index([institutionId, label, id])
+}
+
+/// Order of each pictogram within a catalog category.
+model CategoryPictogram {
+  institutionId String    @default(dbgenerated("current_institution()"))
+  categoryId    String
+  pictogramId   String
+  sortOrder     Int
+  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  pictogram     Pictogram @relation(fields: [pictogramId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, pictogramId])
+  @@index([pictogramId])
+}
+
+/// One row per institution (spec 113). Increases with every profile change or patient admission/discharge.
+model GlobalSyncVersion {
+  institutionId String @id @default(dbgenerated("current_institution()"))
+  value         Int    @default(0)
+}
+
+// ==================== 106 · SYNC ====================
+
+model Session {
+  institutionId     String        @default(dbgenerated("current_institution()"))
+  /// UUID generated on the tablet (or on the guardian's phone).
+  id                String        @id
+  patientId         String
+  /// Null for practice at home (spec 112): it does not go through a tablet.
+  deviceId          String?
+  kind              SessionKind   @default(THERAPY)
+  /// Guardian who did the practice at home and the homework they practiced, if it was one.
+  guardianId        String?
+  homeworkId        String?
+  /// Therapist chosen on the tablet and whether she entered with her personal PIN (spec 002).
+  therapistId       String?
+  therapistVerified Boolean       @default(false)
+  profileVersion    Int
+  startedAt         DateTime
+  endedAt           DateTime?
+  receivedAt        DateTime      @default(now())
+  patient           Patient       @relation(fields: [patientId], references: [id])
+  device            Device?       @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  therapist         User?         @relation("SessionTherapist", fields: [therapistId], references: [id])
+  guardian          User?         @relation("SessionGuardian", fields: [guardianId], references: [id])
+  homework          Homework?     @relation(fields: [homeworkId], references: [id], onDelete: SetNull)
+  events            Event[]
+  activityRuns      ActivityRun[]
+  notes             Note[]
+
+  @@index([patientId, startedAt])
+  @@index([institutionId, startedAt])
+  @@index([homeworkId])
+  @@index([deviceId, startedAt])
+}
+
+model Event {
+  institutionId String   @default(dbgenerated("current_institution()"))
+  /// UUID generated on the tablet.
+  id            String   @id
+  sessionId     String
+  type          String
+  payload       Json
+  occurredAt    DateTime
+  receivedAt    DateTime @default(now())
+  session       Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, occurredAt])
+  @@index([type])
+  @@index([sessionId, type])
+}
+
+model ActivityRun {
+  id            String           @id
+  institutionId String           @default(dbgenerated("current_institution()"))
+  sessionId     String
+  type          String
+  level         Int
+  startedAt     DateTime
+  endedAt       DateTime?
+  session       Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  results       ActivityResult[]
+
+  @@index([sessionId])
+}
+
+model ActivityResult {
+  id                String      @id
+  institutionId     String      @default(dbgenerated("current_institution()"))
+  runId             String
+  targetPictogramId String
+  chosenPictogramId String
+  correct           Boolean
+  firstAttempt      Boolean
+  responseMs        Int
+  answeredAt        DateTime
+  run               ActivityRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+}
+
+// ==================== 108 · OBSERVATIONS AND GOALS ====================
+
+model Note {
+  id               String    @id @default(uuid())
+  institutionId    String    @default(dbgenerated("current_institution()"))
+  patientId        String
+  sessionId        String?
+  authorId         String
+  text             String    @db.VarChar(2000)
+  /// Visible to the guardian (spec 112 FR-004); the therapist can change it whenever she wants.
+  sharedWithFamily Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  editedAt         DateTime?
+  patient          Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  session          Session?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  author           User      @relation(fields: [authorId], references: [id])
+
+  @@index([patientId, createdAt])
+}
+
+model Goal {
+  id            String     @id @default(uuid())
+  institutionId String     @default(dbgenerated("current_institution()"))
+  patientId     String
+  authorId      String
+  text          String     @db.VarChar(2000)
+  targetDate    DateTime?  @db.Date
+  status        GoalStatus @default(IN_PROGRESS)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  patient       Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  author        User       @relation(fields: [authorId], references: [id])
+
+  @@index([patientId])
+}
+
+// ==================== 112 · HOMEWORK ====================
+
+/// Review homework at home (spec 112 FR-005): instruction, pictograms from the patient's board, deadline and,
+/// optionally, the «identificar» activity with those pictograms.
+model Homework {
+  id            String              @id @default(uuid())
+  institutionId String              @default(dbgenerated("current_institution()"))
+  patientId     String
+  authorId      String
+  instructions  String              @db.VarChar(2000)
+  dueDate       DateTime?           @db.Date
+  withActivity  Boolean             @default(false)
+  completedAt   DateTime?
+  completedBy   String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  patient       Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  author        User                @relation("HomeworkAuthor", fields: [authorId], references: [id])
+  pictograms    HomeworkPictogram[]
+  sessions      Session[]
+
+  @@index([patientId, createdAt])
+}
+
+model HomeworkPictogram {
+  institutionId String    @default(dbgenerated("current_institution()"))
+  homeworkId    String
+  pictogramId   String
+  sortOrder     Int
+  homework      Homework  @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  pictogram     Pictogram @relation(fields: [pictogramId], references: [id])
+
+  @@id([homeworkId, pictogramId])
+  @@index([pictogramId])
+}
+
+// ==================== 109 · AUDIT ====================
+
+/// Insert-only. No FK on purpose: it survives patient deletion (spec 110).
+model AuditLog {
+  id            BigInt    @id @default(autoincrement())
+  /// Null for platform events (requests, super administrator, login with an unknown email).
+  institutionId String?   @default(dbgenerated("current_institution()"))
+  actorType     ActorType
+  actorId       String?
+  action        String
+  entity        String
+  entityId      String?
+  patientCode   String?
+  ip            String?
+  summary       Json?
+  createdAt     DateTime  @default(now())
+
+  @@index([institutionId, createdAt])
+  @@index([createdAt])
+  @@index([patientCode])
+  @@index([actorId])
+  @@index([institutionId, id(sort: Desc)])
+}
+
+// ==================== 110 · DATA RIGHTS ====================
+
+/// Stores the patient code, not an FK: it is not deleted when the patient is deleted.
+model DataRequest {
+  id                    String            @id @default(uuid())
+  institutionId         String            @default(dbgenerated("current_institution()"))
+  patientCode           String
+  type                  DataRequestType
+  requestedAt           DateTime
+  respondedAt           DateTime?
+  status                DataRequestStatus @default(OPEN)
+  handledBy             String?
+  notes                 String?
+  statisticalUseAllowed Boolean?
+
+  @@index([institutionId, status])
+  @@index([patientCode])
+  @@index([status])
+}
+
+/// Deleted codes (spec 110): the tablets remove them on the next sync.
+model RetiredPatientCode {
+  institutionId String   @default(dbgenerated("current_institution()"))
+  code          String
+  syncVersion   Int
+  retiredAt     DateTime @default(now())
+
+  @@id([institutionId, code])
+  @@index([syncVersion])
+  @@index([institutionId, syncVersion])
+}
+
+// ==================== 010 · CLONED VOICE ====================
+
+/// Cloned voice of a person the patient trusts (spec 010 FR-004/005). Biometric data: consent is mandatory.
+model Voice {
+  id            String      @id @default(uuid())
+  institutionId String      @default(dbgenerated("current_institution()"))
+  patientId     String      @unique
+  ownerName     String
+  relationship  String
+  consentDate   DateTime    @db.Date
+  /// 10 to 30 s sample in the bucket (`voices/<id>/sample.<ext>`).
+  samplePath    String
+  /// What the sample says (optional): improves the cloning.
+  transcript    String?
+  /// Voice id in the cloning service (`Clonar-voz`); null until registered.
+  engineVoiceId String?
+  /// PENDING (registering) · READY · FAILED
+  status        String      @default("PENDING")
+  error         String?
+  createdById   String
+  createdAt     DateTime    @default(now())
+  patient       Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  clips         VoiceClip[]
+}
+
+/// Audio of a word (a pictogram's label) with the cloned voice; generated once and stored in the bucket.
+model VoiceClip {
+  institutionId String    @default(dbgenerated("current_institution()"))
+  voiceId       String
+  pictogramId   String
+  /// Text it was generated from: if the label changes, it is generated again.
+  text          String
+  path          String
+  createdAt     DateTime  @default(now())
+  voice         Voice     @relation(fields: [voiceId], references: [id], onDelete: Cascade)
+  pictogram     Pictogram @relation(fields: [pictogramId], references: [id])
+
+  @@id([voiceId, pictogramId])
+}
+
+// ==================== CENTER SETTINGS (spec 002 and 103 FR-008) ====================
+
+/// One row per institution (spec 113): what its administrator adjusts for the whole Center.
+model CenterSettings {
+  institutionId           String   @id @default(dbgenerated("current_institution()"))
+  centerName              String   @default("Centro")
+  /// Center PIN, one for all tablets: { salt, hash, iterations } (PBKDF2-SHA256, the format the tablet verifies).
+  centerPin               Json?
+  /// Minutes of inactivity before leaving therapist mode on the tablet.
+  therapistTimeoutMinutes Int      @default(5)
+  /// Minutes a tablet registration code stays valid.
+  registrationCodeMinutes Int      @default(15)
+  /// Logo of the center: path in the bucket, never a URL.
+  logoPath                String?
+  /// Last patient number (P-0001…): sequential per institution, never reused (spec 113 FR-004).
+  lastPatientNumber       Int      @default(0)
+  /// With a database default: the single row is created in the migration, outside Prisma.
+  updatedAt               DateTime @default(now()) @updatedAt
+}
+
+// ==================== BACKGROUND JOBS ====================
+
+/// Queue of heavy jobs (report PDF, data ZIP, cloned voice): the API enqueues them and responds 202 with the id;
+/// a worker in another process takes them one at a time per lane (FOR UPDATE SKIP LOCKED) and leaves the file in the bucket. No FK: the patient
+/// code stays for the audit; when the patient is deleted (spec 110) their jobs and files are deleted.
+model Job {
+  id            String    @id @default(uuid())
+  institutionId String    @default(dbgenerated("current_institution()"))
+  type          JobType
+  status        JobStatus @default(QUEUED)
+  requestedBy   String
+  patientId     String?
+  patientCode   String
+  /// Job parameters (e.g. { from, to } of the report).
+  params        Json      @default("{}")
+  /// Resulting file in the bucket; null until finished or after it expires.
+  resultPath    String?
+  fileName      String?
+  error         String?
+  attempts      Int       @default(0)
+  /// Not picked up before this date (retries with increasing wait).
+  runAfter      DateTime  @default(now())
+  /// While running: if the worker dies and the date passes, another one takes it over.
+  lockedUntil   DateTime?
+  createdAt     DateTime  @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  /// Until when the result can be downloaded.
+  expiresAt     DateTime?
+
+  @@index([status, runAfter])
+  @@index([requestedBy, createdAt])
+  @@index([patientId])
+}
+
+// ==================== 113 · INSTITUTIONS ====================
+
+enum InstitutionRequestStatus {
+  PENDING
+  /// The super administrator contacted the center (goal: within 24 h) to complete its profile.
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+/// Center or institution that uses the platform (tenant). Every table of a center carries its `institutionId` and PostgreSQL
+/// RLS lets the connection see only the rows of its institution (migration 20261027000000_institutions).
+model Institution {
+  id              String        @id @default(uuid())
+  name            String
+  ruc             String?       @unique
+  city            String?
+  kind            String?
+  /// Official contact of the center (platform administration data).
+  email           String?
+  phone           String?
+  address         String?
+  /// Limits set by the super administrator; null = no limit.
+  maxTherapists   Int?
+  maxDevices      Int?
+  active          Boolean       @default(true)
+  suspendedReason String?       @db.VarChar(500)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
+  users           User[]
+  devices         Device[]
+  subscription    Subscription?
+}
+
+/// Account request from «Solicitar» (spec 113 FR-005). Only the super administrator sees it.
+model InstitutionRequest {
+  id                String                   @id @default(uuid())
+  institutionName   String
+  ruc               String
+  city              String
+  kind              String
+  contactName       String
+  contactEmail      String
+  contactPhone      String
+  approxPatients    Int
+  message           String?                  @db.VarChar(1000)
+  /// Version of the privacy notice that was accepted and when (LOPDP art. 12).
+  privacyVersion    String
+  privacyAcceptedAt DateTime
+  ip                String?
+  status            InstitutionRequestStatus @default(PENDING)
+  /// When the super administrator spoke with the contact, with the call notes.
+  contactedAt       DateTime?
+  reviewNotes       String?                  @db.VarChar(2000)
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  rejectionReason   String?                  @db.VarChar(1000)
+  /// The institution created on approval.
+  institutionId     String?
+  createdAt         DateTime                 @default(now())
+
+  @@index([status, createdAt])
+}
+
+// ==================== PLATFORM ADMINISTRATION ====================
+
+enum NotificationAudience {
+  /// Super administrators (institutionId is null).
+  PLATFORM
+  /// Administrators of a center.
+  INSTITUTION
+}
+
+/// Notifications for the administration panels. Shared by the audience: the first read marks it as read for everyone.
+model Notification {
+  id            String               @id @default(uuid())
+  institutionId String?              @default(dbgenerated("current_institution()"))
+  audience      NotificationAudience
+  type          String
+  title         String               @db.VarChar(160)
+  body          String               @db.VarChar(1000)
+  /// Web route it opens, e.g. /platform/requests/<id>.
+  link          String?
+  readAt        DateTime?
+  createdAt     DateTime             @default(now())
+
+  @@index([audience, institutionId, createdAt])
+}
+
+// ==================== AGENDA ====================
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+/// Therapy agenda of the center: the administrator builds it for all therapists; each therapist sees her own.
+model Appointment {
+  id            String            @id @default(uuid())
+  institutionId String            @default(dbgenerated("current_institution()"))
+  patientId     String
+  therapistId   String
+  startsAt      DateTime
+  endsAt        DateTime
+  status        AppointmentStatus @default(SCHEDULED)
+  roomId        String?
+  notes         String?           @db.VarChar(500)
+  createdBy     String
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  patient       Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  therapist     User              @relation("AppointmentTherapist", fields: [therapistId], references: [id])
+  room          Room?             @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId, startsAt])
+  @@index([therapistId, startsAt])
+  @@index([patientId, startsAt])
+  @@index([roomId, startsAt])
+  @@index([institutionId, status, startsAt])
+}
+
+// ==================== CENTER AGENDA ====================
+
+/// A consulting room of the center. Occupancy is measured per room.
+model Room {
+  id            String        @id @default(uuid())
+  institutionId String        @default(dbgenerated("current_institution()"))
+  name          String        @db.VarChar(60)
+  active        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  appointments  Appointment[]
+
+  @@unique([institutionId, name])
+}
+
+/// Opening hours of the center: one row per open weekday (0 = Sunday), in minutes of the local day. A day without a row is closed.
+model CenterHours {
+  institutionId String @default(dbgenerated("current_institution()"))
+  weekday       Int
+  opensAt       Int
+  closesAt      Int
+
+  @@id([institutionId, weekday])
+}
+
+/// Sessions prescribed for a patient. Completed sessions come from the agenda, never typed by hand.
+model TreatmentPlan {
+  patientId          String   @id
+  institutionId      String   @default(dbgenerated("current_institution()"))
+  prescribedSessions Int
+  notes              String?  @db.VarChar(500)
+  updatedBy          String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  patient            Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId])
+}
+
+// ==================== ANNUAL PLAN ====================
+
+enum SubscriptionStatus {
+  /// Approved center that has not paid the annual fee yet (grace period).
+  PENDING_PAYMENT
+  ACTIVE
+  CANCELED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  OTHER
+}
+
+/// Annual plan of a center: USD 2.00 per year by default. Payments are recorded by the super admin; each one extends the
+/// period by a year. "Expired" is derived (ACTIVE with currentPeriodEnd in the past). A center admin only reads its own row.
+model Subscription {
+  institutionId      String                @id
+  plan               String                @default("ANNUAL")
+  priceCents         Int                   @default(200)
+  currency           String                @default("USD")
+  status             SubscriptionStatus    @default(PENDING_PAYMENT)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  /// End of the grace period while PENDING_PAYMENT.
+  graceEndsAt        DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  institution        Institution           @relation(fields: [institutionId], references: [id])
+  payments           SubscriptionPayment[]
+}
+
+model SubscriptionPayment {
+  id            String        @id @default(uuid())
+  institutionId String
+  amountCents   Int
+  currency      String        @default("USD")
+  method        PaymentMethod
+  reference     String?       @db.VarChar(120)
+  paidAt        DateTime
+  periodStart   DateTime
+  periodEnd     DateTime
+  recordedBy    String
+  createdAt     DateTime      @default(now())
+  subscription  Subscription  @relation(fields: [institutionId], references: [institutionId])
+
+  @@index([institutionId, paidAt])
+  @@index([paidAt])
+}

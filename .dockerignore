@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.git
+.env*
+*.log
+docs
+test/perf
+2026-10-2*-*.txt
+Dockerfile
+compose.yaml
+docker-compose.dev.yaml
+.dockerignore

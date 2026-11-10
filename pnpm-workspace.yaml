@@ -1,0 +1,14 @@
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  '@scarf/scarf': false
+  argon2: true
+  prisma: true
+  unrs-resolver: true
+
+# Transitive packages with known advisories (pnpm audit, 2026-11): pinned to their first fixed versions.
+overrides:
+  body-parser: ^2.4.0
+  multer: ^2.5.0
+  follow-redirects: ^1.16.2
+  js-yaml@5: ^5.4.1

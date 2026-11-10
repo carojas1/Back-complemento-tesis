@@ -1,0 +1,57 @@
+# Desarrollo con Docker (spec 114 FR-003): `docker compose -f docker-compose.dev.yaml up`. El código se monta y Nest
+# recarga solo; node_modules sale de la imagen (tras cambiar dependencias: `up --build -V`).
+# Pruebas e2e contra un PostgreSQL efímero, sin tocar Neon: `docker compose -f docker-compose.dev.yaml run --rm test`.
+name: necon-dev
+
+x-dev: &dev
+  image: necon-api:dev
+  build: { context: ., target: development }
+  volumes: ['.:/app', '/app/node_modules']
+
+services:
+  api:
+    <<: *dev
+    env_file: .env
+    environment: { REDIS_URL: 'redis://redis:6379' }
+    # LAN_IP (en .env) = IP de este equipo en la red local, para que llegue la tableta. Sin LAN_IP, solo localhost.
+    ports: ['${LAN_IP:-127.0.0.1}:3000:3000']
+    depends_on: [redis]
+
+  worker:
+    <<: *dev
+    env_file: .env
+    command: sh -c "node_modules/.bin/prisma generate && node_modules/.bin/nest start --watch --entryFile worker"
+    environment: { REDIS_URL: 'redis://redis:6379', VOICE_CLONE_URL: 'http://host.docker.internal:8080' }
+    extra_hosts: ['host.docker.internal:host-gateway']
+    depends_on: [redis]
+
+  redis:
+    image: redis:8-alpine
+    ports: ['127.0.0.1:6379:6379'] # solo desde este equipo (redis-cli)
+
+  # ---------- Perfil test ----------
+  test-db:
+    image: postgres:17
+    profiles: [test]
+    environment: { POSTGRES_PASSWORD: test }
+    tmpfs: [/var/lib/postgresql/data] # efímera: se borra al bajar el contenedor
+    command: postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+    healthcheck: { test: ['CMD', 'pg_isready', '-U', 'postgres'], interval: 1s, retries: 30 }
+
+  # Sin env_file: las variables que faltan las pone test/app.ts. Vacías a propósito: bucket y caché en memoria.
+  # Una sola suite: `run --rm test test/auth.e2e-spec.ts`.
+  test:
+    <<: *dev
+    profiles: [test]
+    depends_on: { test-db: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: &testDb postgresql://postgres:test@test-db:5432/postgres
+      DATABASE_URL_TEST: *testDb
+      AWS_ENDPOINT_URL_S3: ''
+      REDIS_URL: ''
+      TRUST_PROXY_HOPS: 1
+    entrypoint:
+      - sh
+      - -c
+      - node_modules/.bin/prisma generate && node_modules/.bin/jest --config ./test/jest-e2e.json --runInBand --forceExit "$$@"
+      - jest

@@ -1,0 +1,51 @@
+# Producción en la red del Centro (spec 114 FR-003): `docker compose up -d` deja la API, el worker y Redis.
+# La base sigue en Neon (DATABASE_URL del .env). Migraciones: `docker compose run --rm migrate`.
+name: necon
+
+x-app: &app
+  image: necon-api:prod
+  build: { context: ., target: production }
+  env_file: .env
+  init: true # señales a node: `docker compose stop` cierra sin esperar el SIGKILL
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  depends_on: [redis]
+
+x-env: &env
+  NODE_ENV: production
+  REDIS_URL: redis://redis:6379
+  TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0} # 0 when published directly; behind the portal, 1 (or uniquelocal when it runs beside the API), or every user shares one rate limit
+
+services:
+  api:
+    <<: *app
+    environment: *env
+    # LAN_IP (en .env) = IP de este equipo en la red local: las tabletas llaman a http://<LAN_IP>:3000.
+    # Sin LAN_IP solo escucha en localhost. Nunca abrir el puerto en el router.
+    ports: ['${LAN_IP:-127.0.0.1}:3000:3000']
+    deploy: { resources: { limits: { memory: 1G } } }
+
+  # Genera los PDF, ZIP y voces de la cola. El clonador de voz corre en el anfitrión (GPU).
+  worker:
+    <<: *app
+    command: ['node', 'dist/worker']
+    environment:
+      <<: *env
+      VOICE_CLONE_URL: http://host.docker.internal:8080
+    extra_hosts: ['host.docker.internal:host-gateway']
+    deploy: { resources: { limits: { memory: 1.5G } } }
+
+  # Solo caché (60 s): sin disco y sin "ports", solo la alcanzan la API y el worker.
+  redis:
+    image: redis:8-alpine
+    command: redis-server --save "" --maxmemory 100mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    deploy: { resources: { limits: { memory: 128M } } }
+
+  # Una vez por despliegue, antes de `up`: aplica prisma/migrations. Usa la etapa builder (tiene la CLI de Prisma).
+  migrate:
+    build: { context: ., target: builder }
+    profiles: [migrate]
+    env_file: .env
+    command: ['node_modules/.bin/prisma', 'migrate', 'deploy']

@@ -1,0 +1,3041 @@
+{
+  "info": {
+    "_postman_id": "376d0474-7366-473f-9122-bd667b82def8",
+    "name": "Necon API",
+    "description": "Colección de la API de Necon (NestJS). Importable en Postman e Insomnia.\n\n1. Ajusta las variables de la colección: baseUrl, appKey (= APP_KEY del backend) y las contraseñas.\n2. Ejecuta 'Login admin' o 'Login terapeuta': el token se guarda solo en {{accessToken}}.\n3. Las peticiones que crean algo guardan su id ({{userId}}, {{categoryId}}, {{pictogramId}}, {{deviceId}}, {{registrationCode}}).\n\nTodos los listados están paginados: ?page=1&limit=20 (máximo 100) y responden { items, page, limit, total, totalPages }. Errores: { statusCode, error, message }.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "appKey",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@centro.org"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "therapistEmail",
+      "value": "ana@centro.org"
+    },
+    {
+      "key": "therapistPassword",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "pictogramId",
+      "value": ""
+    },
+    {
+      "key": "deviceId",
+      "value": ""
+    },
+    {
+      "key": "deviceToken",
+      "value": ""
+    },
+    {
+      "key": "registrationCode",
+      "value": ""
+    },
+    {
+      "key": "centerPin",
+      "value": ""
+    },
+    {
+      "key": "resetToken",
+      "value": ""
+    },
+    {
+      "key": "publicKey",
+      "value": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEw+Eyggd8BLbPIuX8rbpiIFcqfx4FpwWLuCB/leJM7D6kE8e+uVYf8Lbr3xZBxv+XyTqLapMA+ofm5ZtoDhQ7+g=="
+    },
+    {
+      "key": "patientId",
+      "value": ""
+    },
+    {
+      "key": "avatarId",
+      "value": ""
+    },
+    {
+      "key": "catalogItemId",
+      "value": ""
+    },
+    {
+      "key": "boardCategoryId",
+      "value": ""
+    },
+    {
+      "key": "boardPictogramId",
+      "value": ""
+    },
+    {
+      "key": "sessionId",
+      "value": ""
+    },
+    {
+      "key": "noteId",
+      "value": ""
+    },
+    {
+      "key": "goalId",
+      "value": ""
+    },
+    {
+      "key": "auditId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth (spec 101)",
+      "item": [
+        {
+          "name": "Login admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "10.20.0.1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Devuelve el access token (15 min) y deja la cookie refresh. Si user.mustChangePassword es true, solo funciona 'Cambiar contraseña'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('accessToken', pm.response.json().accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login terapeuta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "10.20.0.1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{therapistEmail}}\",\n  \"password\": \"{{therapistPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('accessToken', pm.response.json().accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambiar contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Obligatorio con clave temporal. Cierra las demás sesiones y devuelve una nueva.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"\",\n  \"newPassword\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('accessToken', pm.response.json().accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Usa la cookie refresh (httpOnly, path /auth) que dejó el login.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('accessToken', pm.response.json().accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Olvidé mi contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Responde 204 siempre. Sin SMTP_HOST, el enlace sale en el log del backend.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{therapistEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Restablecer contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Crear o cambiar mi PIN de tableta (THERAPIST)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "pin"
+              ]
+            },
+            "description": "Spec 002: la terapeuta crea su PIN de 4 a 6 dígitos (sin secuencias como 1111 o 1234) confirmando su contraseña. La API guarda solo el hash. Usa el token de \"Login terapeuta\". 204.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{therapistPassword}}\",\n  \"pin\": \"4826\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios (spec 102, ADMIN)",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Listar terapeutas activas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?role=THERAPIST&active=true&page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "THERAPIST"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Crear terapeuta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "description": "Crea solo terapeutas, con clave temporal que deben cambiar al entrar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nueva Terapeuta\",\n  \"email\": \"nueva@centro.org\",\n  \"temporaryPassword\": \"Temporal2027\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('userId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nombre editado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Desactivar usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "No se borra a nadie: se desactiva y se cierran sus sesiones.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Asignar clave temporal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/temporary-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "temporary-password"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"temporaryPassword\": \"Temporal2027\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Pacientes asignados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/patients?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Reemplazar pacientes asignados",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "patients"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Borrar PIN de la terapeuta",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "pin"
+              ]
+            },
+            "description": "Spec 002/102: borra el PIN de tableta para que la terapeuta cree otro desde su cuenta. 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tabletas (spec 103)",
+      "item": [
+        {
+          "name": "Generar código de registro (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/devices/registration-codes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                "registration-codes"
+              ]
+            },
+            "description": "Exige el PIN del Centro actual: 409 CenterPinNotSet si aún no se crea, 403 WrongCenterPin si no coincide. Vigencia: registrationCodeMinutes de /settings.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"centerPin\": \"{{centerPin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('registrationCode', pm.response.json().code);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar tableta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-App-Key",
+                "value": "{{appKey}}"
+              },
+              {
+                "key": "X-Forwarded-For",
+                "value": "10.20.0.1"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/devices/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                "register"
+              ]
+            },
+            "description": "Pública con X-App-Key. publicKey es una llave P-256 de ejemplo: la tableta queda registrada, pero sus rutas (/devices/me, /vocabulary) exigen firmar con la llave privada, que Postman no tiene.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{registrationCode}}\",\n  \"name\": \"Tableta Postman\",\n  \"model\": \"Postman\",\n  \"appVersion\": \"1.0.0\",\n  \"publicKey\": \"{{publicKey}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('deviceId', pm.response.json().deviceId);",
+                  "  pm.collectionVariables.set('deviceToken', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar tabletas (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Revocar tableta (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{deviceId}}/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                "{{deviceId}}",
+                "revoke"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Comprobar tableta (/devices/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-App-Key",
+                "value": "{{appKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Device {{deviceToken}}"
+              },
+              {
+                "key": "X-Device-Timestamp",
+                "value": "<epoch ms>"
+              },
+              {
+                "key": "X-Device-Signature",
+                "value": "<ECDSA P-256 base64 de MÉTODO\\nruta\\ntimestamp>"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/devices/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                "me"
+              ]
+            },
+            "description": "Ruta de la tableta: exige X-App-Key, token de dispositivo y una firma ECDSA P-256 hecha con la llave privada del Keystore de la tableta. Postman no puede firmar con esa llave; esta ruta se prueba con la app o con las pruebas e2e (test/devices.e2e-spec.ts). Sin firma válida responde 401 DeviceUnauthorized.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Configuración del Centro (tableta)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "devices",
+                "settings"
+              ]
+            },
+            "description": "Ruta de la tableta (firma del Keystore): nombre del Centro, hash PBKDF2 del PIN del Centro e inactividad del modo terapeuta. En Postman responde 401."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Configuración del Centro (spec 103 FR-008, ADMIN)",
+      "item": [
+        {
+          "name": "Ver configuración",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings"
+              ]
+            },
+            "description": "centerName, hasCenterPin, therapistTimeoutMinutes, registrationCodeMinutes."
+          }
+        },
+        {
+          "name": "Editar configuración",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings"
+              ]
+            },
+            "description": "Cualquier campo; se audita SETTINGS_UPDATE.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"centerName\": \"Centro de Fonoaudiología Cuenca\",\n  \"therapistTimeoutMinutes\": 5,\n  \"registrationCodeMinutes\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear o cambiar PIN del Centro",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/settings/center-pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "settings",
+                "center-pin"
+              ]
+            },
+            "description": "Uno para todas las tabletas. currentPin es obligatorio si ya existe uno. 5 intentos por minuto; se audita CENTER_PIN_SET.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPin\": \"{{centerPin}}\",\n  \"pin\": \"{{centerPin}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pictogramas (spec 105, THERAPIST)",
+      "item": [
+        {
+          "name": "Listar pictogramas guardados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pictograms?q=&page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pictograms"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Buscar en ARASAAC",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pictograms/arasaac?q=perro&page=1&limit=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pictograms",
+                "arasaac"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "perro"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": "Caché de 24 h. Si ARASAAC no responde: arasaacAvailable=false e items son los guardados."
+          }
+        },
+        {
+          "name": "Importar de ARASAAC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pictograms/arasaac",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pictograms",
+                "arasaac"
+              ]
+            },
+            "description": "Copia el PNG al bucket. 201 si es nuevo, 200 si ya existía.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"arasaacId\": 7202\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('pictogramId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subir imagen propia",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pictograms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pictograms"
+              ]
+            },
+            "description": "PNG o JPEG de hasta 1 MB (se verifica por sus bytes).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "label",
+                  "value": "Mi imagen",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('pictogramId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar pictograma",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pictograms/{{pictogramId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pictograms",
+                "{{pictogramId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"perro\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorías (spec 105, THERAPIST)",
+      "item": [
+        {
+          "name": "Listar categorías",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Animales\",\n  \"color\": \"#4DB6AC\",\n  \"sortOrder\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('categoryId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar categoría",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"color\": \"#F06292\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Desactivar categoría",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Pictogramas de la categoría",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}/pictograms?page=1&limit=24",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}",
+                "pictograms"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "24"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Agregar pictograma a la categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}/pictograms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}",
+                "pictograms"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pictogramId\": \"{{pictogramId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Quitar pictograma de la categoría",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}/pictograms/{{pictogramId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}",
+                "pictograms",
+                "{{pictogramId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Reordenar la categoría",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{categoryId}}/pictograms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{categoryId}}",
+                "pictograms"
+              ]
+            },
+            "description": "El orden del arreglo es el orden en el tablero.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pictogramIds\": [\n    \"{{pictogramId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Terapeutas (tableta, spec 002)",
+      "item": [
+        {
+          "name": "Terapeutas para elegir",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-App-Key",
+                "value": "{{appKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Device {{deviceToken}}"
+              },
+              {
+                "key": "X-Device-Timestamp",
+                "value": "<epoch ms>"
+              },
+              {
+                "key": "X-Device-Signature",
+                "value": "<ECDSA P-256 base64 de MÉTODO\\nruta\\ntimestamp>"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/therapists?page=1&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "therapists"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Terapeutas activas: id, nombre y hasPin. Ruta de la tableta (spec 002): exige X-App-Key, token de dispositivo y firma ECDSA del Keystore. Postman no puede firmar con esa llave: se prueba con la app o con test/pin.e2e-spec.ts. Sin firma responde 401.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Verificar PIN de la terapeuta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-App-Key",
+                "value": "{{appKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Device {{deviceToken}}"
+              },
+              {
+                "key": "X-Device-Timestamp",
+                "value": "<epoch ms>"
+              },
+              {
+                "key": "X-Device-Signature",
+                "value": "<ECDSA P-256 base64 de MÉTODO\\nruta\\ntimestamp>"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/therapists/{{userId}}/pin-check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "therapists",
+                "{{userId}}",
+                "pin-check"
+              ]
+            },
+            "description": "200 { therapistId, name } · 400 WrongPin · 429 PinLocked (5 fallos, 60 s) · 409 PinRevoked (10 fallos) · 409 PinNotSet · 404 TherapistNotFound. Ruta de la tableta (spec 002): exige X-App-Key, token de dispositivo y firma ECDSA del Keystore. Postman no puede firmar con esa llave: se prueba con la app o con test/pin.e2e-spec.ts. Sin firma responde 401.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"4826\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vocabulario (tableta)",
+      "item": [
+        {
+          "name": "Vocabulario de la tableta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-App-Key",
+                "value": "{{appKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Device {{deviceToken}}"
+              },
+              {
+                "key": "X-Device-Timestamp",
+                "value": "<epoch ms>"
+              },
+              {
+                "key": "X-Device-Signature",
+                "value": "<ECDSA P-256 base64 de MÉTODO\\nruta\\ntimestamp>"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vocabulary?page=1&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vocabulary"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Ruta de la tableta: exige X-App-Key, token de dispositivo y una firma ECDSA P-256 hecha con la llave privada del Keystore de la tableta. Postman no puede firmar con esa llave; esta ruta se prueba con la app o con las pruebas e2e (test/devices.e2e-spec.ts). Sin firma válida responde 401 DeviceUnauthorized.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catálogos (spec 104)",
+      "item": [
+        {
+          "name": "Listar avatares",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalogs/avatars?page=1&limit=20&active=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalogs",
+                "avatars"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "ADMIN o THERAPIST. kind: avatars, diagnoses o conditions. active=true deja solo los que se pueden elegir."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('avatarId', pm.response.json().items[0]?.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar diagnósticos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalogs/diagnoses?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalogs",
+                "diagnoses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "ADMIN o THERAPIST."
+          }
+        },
+        {
+          "name": "Agregar avatar (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalogs/avatars",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalogs",
+                "avatars"
+              ]
+            },
+            "description": "SVG, PNG o JPEG de hasta 200 KB.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Tortuga",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Agregar condición",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalogs/conditions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalogs",
+                "conditions"
+              ]
+            },
+            "description": "Nombre único en el catálogo (409 si se repite).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hipoacusia\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('catalogItemId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Renombrar o desactivar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalogs/conditions/{{catalogItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalogs",
+                "conditions",
+                "{{catalogItemId}}"
+              ]
+            },
+            "description": "Campos opcionales.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hipoacusia leve\",\n  \"active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalogs/conditions/{{catalogItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalogs",
+                "conditions",
+                "{{catalogItemId}}"
+              ]
+            },
+            "description": "Si algún paciente lo usa, solo se desactiva: { deleted: false }."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pacientes (spec 104)",
+      "item": [
+        {
+          "name": "Registrar paciente (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            },
+            "description": "Multipart con la foto del consentimiento firmado (JPG o PNG, 5 MB). Usa {{avatarId}} de \"Listar avatares\" y {{userId}} como terapeuta.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "firstNames",
+                  "value": "Mateo",
+                  "type": "text"
+                },
+                {
+                  "key": "lastNames",
+                  "value": "Pérez Ruiz",
+                  "type": "text"
+                },
+                {
+                  "key": "birthDate",
+                  "value": "2018-05-20",
+                  "type": "text"
+                },
+                {
+                  "key": "guardianName",
+                  "value": "Lucía Pérez",
+                  "type": "text"
+                },
+                {
+                  "key": "guardianPhone",
+                  "value": "0991234567",
+                  "type": "text"
+                },
+                {
+                  "key": "consentDate",
+                  "value": "2026-10-23",
+                  "type": "text"
+                },
+                {
+                  "key": "avatarId",
+                  "value": "{{avatarId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "therapistIds",
+                  "value": "{{userId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "consentImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('patientId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar pacientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients?page=1&limit=20&search=&status=ACTIVE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                }
+              ]
+            },
+            "description": "ADMIN ve todos sin datos clínicos; THERAPIST, solo los asignados. Solo ADMIN: assignedTo={{userId}} lista los de esa terapeuta y notAssignedTo={{userId}} los que aún no tiene (para asignar)."
+          }
+        },
+        {
+          "name": "Ficha del paciente (THERAPIST)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}"
+              ]
+            },
+            "description": "Solo la terapeuta asignada. Se audita PATIENT_READ."
+          }
+        },
+        {
+          "name": "Editar ficha (THERAPIST)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}"
+              ]
+            },
+            "description": "Los valores nuevos de catálogo deben estar activos.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guardianPhone\": \"0997654321\",\n  \"conditionIds\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Dar de alta (THERAPIST)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/discharge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "discharge"
+              ]
+            },
+            "description": "Reversible con /reactivate. El paciente deja de bajar a la tableta."
+          }
+        },
+        {
+          "name": "Reactivar (THERAPIST)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/reactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "reactivate"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Ver consentimiento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/consent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "consent"
+              ]
+            },
+            "description": "ADMIN o terapeuta asignada. Devuelve la imagen descifrada; se audita CONSENT_READ."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Perfil de comunicación (spec 105, THERAPIST)",
+      "item": [
+        {
+          "name": "Ver perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile"
+              ]
+            },
+            "description": "Categorías y pictogramas con URL firmada. Si falta, se crea desde la plantilla del Centro."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('pictogramId', pm.response.json().categories[0]?.pictograms[0]?.pictogramId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambiar ajustes",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile"
+              ]
+            },
+            "description": "gridSize 4/6/9/12, level 1–3, speechRate 0.5–1.5. Sube la versión que baja la tableta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gridSize\": 9,\n  \"level\": 2,\n  \"speechRate\": 0.8,\n  \"sentenceBarEnabled\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Ocultar pictograma",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/pictograms/{{pictogramId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "pictograms",
+                "{{pictogramId}}"
+              ]
+            },
+            "description": "hidden: false lo vuelve a mostrar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hidden\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sincronización (tableta, spec 106)",
+      "item": [
+        {
+          "name": "Perfiles cambiados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-App-Key",
+                "value": "{{appKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Device {{deviceToken}}"
+              },
+              {
+                "key": "X-Device-Timestamp",
+                "value": "<epoch ms>"
+              },
+              {
+                "key": "X-Device-Signature",
+                "value": "<ECDSA P-256 base64 de MÉTODO\\nruta\\ntimestamp>"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sync/profiles?since=0&page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sync",
+                "profiles"
+              ],
+              "query": [
+                {
+                  "key": "since",
+                  "value": "0"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Perfiles de pacientes activos cambiados después de since, códigos dados de alta y version. Ruta de la tableta: Postman no puede firmar con la llave del Keystore; se prueba con la app o con test/sync.e2e-spec.ts.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Subir lote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-App-Key",
+                "value": "{{appKey}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Device {{deviceToken}}"
+              },
+              {
+                "key": "X-Device-Timestamp",
+                "value": "<epoch ms>"
+              },
+              {
+                "key": "X-Device-Signature",
+                "value": "<ECDSA P-256 base64 de MÉTODO\\nruta\\ntimestamp>"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sync/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sync",
+                "batch"
+              ]
+            },
+            "description": "Idempotente (los IDs los genera la tableta). Máximo 100 registros: 413. Ruta de la tableta: Postman no puede firmar con la llave del Keystore; se prueba con la app o con test/sync.e2e-spec.ts.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessions\": [\n    {\n      \"id\": \"00000000-0000-4000-8000-000000000001\",\n      \"patientCode\": \"P-0001\",\n      \"therapistId\": \"{{userId}}\",\n      \"therapistVerified\": true,\n      \"profileVersion\": 1,\n      \"startedAt\": \"2026-10-23T15:00:00.000Z\",\n      \"endedAt\": null\n    }\n  ],\n  \"events\": [\n    {\n      \"id\": \"00000000-0000-4000-8000-000000000002\",\n      \"sessionId\": \"00000000-0000-4000-8000-000000000001\",\n      \"type\": \"pictogram_tapped\",\n      \"payload\": {\n        \"word\": \"agua\"\n      },\n      \"occurredAt\": \"2026-10-23T15:01:00.000Z\"\n    }\n  ],\n  \"activityRuns\": [],\n  \"activityResults\": []\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tablero del paciente desde el panel (specs 010 y 105, THERAPIST)",
+      "item": [
+        {
+          "name": "Ajustes y actividades",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile"
+              ]
+            },
+            "description": "Cuadrícula, nivel, voz (SYSTEM o CLONED), barra de frase y actividades.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityPrompts\": 10,\n  \"activityRepeatSeconds\": 15,\n  \"activityTypes\": [\n    \"identify\"\n  ],\n  \"voice\": \"SYSTEM\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('boardCategoryId', pm.response.json().categories[0]?.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agregar categoría del catálogo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "categories"
+              ]
+            },
+            "description": "Copia la categoría con sus pictogramas activos (409 si ya está).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Quitar categoría",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/categories/{{boardCategoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "categories",
+                "{{boardCategoryId}}"
+              ]
+            },
+            "description": "El catálogo del Centro no cambia."
+          }
+        },
+        {
+          "name": "Agregar pictograma a una categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/categories/{{boardCategoryId}}/pictograms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "categories",
+                "{{boardCategoryId}}",
+                "pictograms"
+              ]
+            },
+            "description": "Al final de la categoría.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pictogramId\": \"{{pictogramId}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('boardPictogramId', pm.response.json().categories.flatMap(c => c.pictograms).find(p => p.pictogramId === pm.collectionVariables.get('pictogramId'))?.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quitar pictograma",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/pictograms/{{boardPictogramId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "pictograms",
+                "{{boardPictogramId}}"
+              ]
+            },
+            "description": "Si tenía grabación, se borra."
+          }
+        },
+        {
+          "name": "Subir grabación (m4a)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/pictograms/{{boardPictogramId}}/recording",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "pictograms",
+                "{{boardPictogramId}}",
+                "recording"
+              ]
+            },
+            "description": "m4a de hasta 200 KB (máx. 3 s).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Quitar grabación",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/pictograms/{{boardPictogramId}}/recording",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "pictograms",
+                "{{boardPictogramId}}",
+                "recording"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Reordenar categorías",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/categories/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "categories",
+                "order"
+              ]
+            },
+            "description": "Todos los ids, en el nuevo orden.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"{{boardCategoryId}}\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Reordenar pictogramas de una categoría",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/profile/categories/{{boardCategoryId}}/pictograms/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "profile",
+                "categories",
+                "{{boardCategoryId}}",
+                "pictograms",
+                "order"
+              ]
+            },
+            "description": "Todos los ids, en el nuevo orden.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"{{boardPictogramId}}\"\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voz clonada (spec 010, THERAPIST)",
+      "item": [
+        {
+          "name": "Crear voz",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/voice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "voice"
+              ]
+            },
+            "description": "Muestra de 10–30 s y consentimiento. La generación sigue en segundo plano (necesita el servicio Clonar-voz).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "ownerName",
+                  "value": "Lucía Pérez",
+                  "type": "text"
+                },
+                {
+                  "key": "relationship",
+                  "value": "Madre",
+                  "type": "text"
+                },
+                {
+                  "key": "consentDate",
+                  "value": "2026-10-23",
+                  "type": "text"
+                },
+                {
+                  "key": "consentConfirmed",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "sample",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "transcript",
+                  "value": "",
+                  "type": "text",
+                  "description": "Lo que dice la muestra (opcional)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Estado y avance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/voice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "voice"
+              ]
+            },
+            "description": "progress: { ready, total }"
+          }
+        },
+        {
+          "name": "Generar voces",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/voice/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "voice",
+                "generate"
+              ]
+            },
+            "description": "Genera con la voz base el audio de los pictogramas del tablero que aún no lo tienen (202)."
+          }
+        },
+        {
+          "name": "Borrar voz",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/voice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "voice"
+              ]
+            },
+            "description": "Borra la muestra y los audios; el perfil vuelve a SYSTEM."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sesiones e indicadores (spec 107, THERAPIST)",
+      "item": [
+        {
+          "name": "Sesiones del paciente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/sessions?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "sessions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Con totales por sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('sessionId', pm.response.json().items[0]?.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de una sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sessions/{{sessionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sessions",
+                "{{sessionId}}"
+              ]
+            },
+            "description": "Línea de tiempo y resultados de actividad."
+          }
+        },
+        {
+          "name": "Indicadores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "reports"
+              ]
+            },
+            "description": "Por defecto, últimos 30 días."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Observaciones y objetivos (spec 108, THERAPIST)",
+      "item": [
+        {
+          "name": "Observaciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/notes?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Nueva observación",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "notes"
+              ]
+            },
+            "description": "sessionId opcional.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Pidió agua con el tablero.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('noteId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar observación (24 h)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notes/{{noteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notes",
+                "{{noteId}}"
+              ]
+            },
+            "description": "Solo la autora y dentro de 24 h.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Pidió agua con el tablero, sin ayuda.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Objetivos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/goals?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "goals"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Nuevo objetivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}/goals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}",
+                "goals"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Pedir agua con el tablero\",\n  \"targetDate\": \"2026-12-15\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) {",
+                  "  pm.collectionVariables.set('goalId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar objetivo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/goals/{{goalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "goals",
+                "{{goalId}}"
+              ]
+            },
+            "description": "IN_PROGRESS, ACHIEVED o SUSPENDED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACHIEVED\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auditoría (spec 109, ADMIN)",
+      "item": [
+        {
+          "name": "Consultar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit?page=1&limit=50&patientCode=&action=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "patientCode",
+                  "value": ""
+                },
+                {
+                  "key": "action",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Filtros: actorId, action, patientCode, from, to."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300 && pm.response.json().items.length) {",
+                  "  pm.collectionVariables.set('auditId', pm.response.json().items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de un registro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit/{{auditId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "{{auditId}}"
+              ]
+            },
+            "description": "Qué pasó, quién, cuándo, IP y detalle. 404 AuditRecordNotFound."
+          }
+        },
+        {
+          "name": "Exportar CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit/csv?patientCode=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "csv"
+              ],
+              "query": [
+                {
+                  "key": "patientCode",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Mismo filtro; queda auditado."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Panel en vivo (spec 106 FR-005/006)",
+      "item": [
+        {
+          "name": "Pacientes con su estado en vivo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/live/patients?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "live",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "ONLINE / AWAY / OFFLINE y la sesión abierta. Los cambios llegan por el WebSocket /ws?token=<JWT> con { \"type\": \"presence\" }; la sesión de un paciente, con { \"type\": \"watch\", \"patientId\" }."
+          }
+        }
+      ]
+    }
+  ]
+}
